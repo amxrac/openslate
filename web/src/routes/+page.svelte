@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as auth from "$lib/auth.svelte";
   import { api } from "$lib/api";
   import { onMount } from "svelte";
 
@@ -15,5 +16,13 @@
   });
 </script>
 
-<h1>openslate</h1>
+<h1 class="text-2xl font-bold">openslate</h1>
 <p>Backend: {health}</p>
+<p>Authenticated: {auth.isAuthenticated()}</p>
+
+<button
+  onclick={() => auth.logout()}
+  class="mt-2 rounded bg-red-600 px-4 py-2 text-white"
+>
+  Log out
+</button>
