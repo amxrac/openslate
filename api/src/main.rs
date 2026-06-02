@@ -1,15 +1,14 @@
+mod auth;
 mod config;
 mod db;
 
-use axum::http::header::CONTENT_TYPE;
-use axum::{Json, Router, extract::State, http::Method, http::StatusCode, routing::get};
-use serde_json::{Value, json};
-use sqlx::SqlitePool;
-use tower_http::cors::{AllowOrigin, CorsLayer};
+use axum::http::Method;
+use axum::{Router, middleware, routing::get};
+use tower_http::cors::AllowOrigin;
 
 #[derive(Clone)]
 struct AppState {
-    db: SqlitePool,
+    db: sqlx::SqlitePool,
 }
 
 #[tokio::main]
@@ -23,16 +22,19 @@ async fn main() {
 
     let state = AppState { db: pool };
 
-    let cors = CorsLayer::new()
+    let cors = tower_http::cors::CorsLayer::new()
         .allow_origin(AllowOrigin::exact(config.frontend_url.parse().unwrap()))
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers([CONTENT_TYPE]);
+        .allow_headers([axum::http::header::CONTENT_TYPE]);
 
-    let app = Router::new()
+    // Public routes (no auth)
+    let public = Router::new()
         .route("/api/health", get(health_check))
-        .layer(cors)
-        .with_state(state);
+        .route("/api/auth/login", axum::routing::post(auth::login))
+        .route("/api/auth/logout", axum::routing::post(auth::logout));
+
+    let app = Router::new().merge(public).layer(cors).with_state(state);
 
     let addr = format!("{}:{}", config.host, config.port);
     println!("Server running on http://{}", addr);
@@ -41,11 +43,13 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn health_check(State(state): State<AppState>) -> Result<Json<Value>, StatusCode> {
+async fn health_check(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Result<axum::Json<serde_json::Value>, axum::http::StatusCode> {
     sqlx::query("SELECT 1")
         .execute(&state.db)
         .await
-        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+        .map_err(|_| axum::http::StatusCode::SERVICE_UNAVAILABLE)?;
 
-    Ok(Json(json!({ "status": "ok" })))
+    Ok(axum::Json(serde_json::json!({ "status": "ok" })))
 }
