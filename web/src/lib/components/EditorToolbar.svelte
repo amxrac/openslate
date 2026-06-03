@@ -1,13 +1,32 @@
 <script lang="ts">
   import type { Editor } from "@tiptap/core";
+  import { api } from "$lib/api";
   import { common } from "lowlight";
 
-  let { editor }: { editor: Editor } = $props();
+  let {
+    editor,
+    noteId = "",
+    onUploadClick,
+    onOpenMediaPicker,
+    onImportComplete,
+    uploading = false,
+  }: {
+    editor: Editor;
+    noteId?: string;
+    onUploadClick?: () => void;
+    onOpenMediaPicker?: () => void;
+    onImportComplete?: () => void;
+    uploading?: boolean;
+  } = $props();
 
   let availableLangs = $state<string[]>(Object.keys(common).sort());
   let currentLang = $state("");
   let isInCodeBlock = $state(false);
   let isInTable = $state(false);
+  let showMediaMenu = $state(false);
+  let showUrlInput = $state(false);
+  let urlInput = $state("");
+  let importingUrl = $state(false);
 
   $effect(() => {
     if (!editor) return;
@@ -43,6 +62,36 @@
     if (url) {
       editor.chain().focus().setLink({ href: url }).run();
     }
+  }
+
+  async function submitUrlImport() {
+    const url = urlInput.trim();
+    if (!url) return;
+    importingUrl = true;
+    try {
+      const body: Record<string, string> = { url };
+      if (noteId) body.note_id = noteId;
+      const res = await api(`/api/media/from-url?t=${Date.now()}`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mediaUrl = `${import.meta.env.VITE_API_URL || "http://localhost:3001"}/api/media/${data.id}/file`;
+        editor.chain().focus().setImage({ src: mediaUrl }).run();
+        onImportComplete?.();
+        showMediaMenu = false;
+        showUrlInput = false;
+        urlInput = "";
+      } else {
+        let msg = `Import failed (${res.status})`;
+        try { const j = await res.json(); if (j.error) msg += `: ${j.error}`; } catch {}
+        alert(msg);
+      }
+    } catch (e) {
+      alert(`Import error: ${e instanceof Error ? e.message : e}`);
+    }
+    importingUrl = false;
   }
 </script>
 
@@ -191,6 +240,65 @@
     </button>
   {/if}
 
+  <span class="w-px h-5 mx-1" style="background: var(--border-color);"></span>
+
+  <div class="relative">
+    <button
+      onclick={() => showMediaMenu = !showMediaMenu}
+      class="toolbar-btn"
+      class:is-active={showMediaMenu}
+      title="Add media"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </button>
+    {#if showMediaMenu}
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div role="none" class="fixed inset-0 z-40" onclick={() => showMediaMenu = false}></div>
+      <div
+        class="absolute left-0 top-full mt-1 z-50 rounded border shadow-lg py-1 min-w-[160px]"
+        style="background: var(--bg-sidebar); border-color: var(--border-color);"
+      >
+        {#if showUrlInput}
+          <div class="flex flex-col gap-1 p-2" style="min-width: 240px;">
+            <input
+              bind:value={urlInput}
+              placeholder="Paste image/video URL..."
+              onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitUrlImport(); } }}
+              class="w-full text-xs px-2 py-1 rounded outline-none"
+              style="color: var(--text-primary); background: var(--bg-editor); border: 1px solid var(--border-input);"
+              autofocus
+            />
+            <div class="flex gap-1 justify-end">
+              <button
+                onclick={() => { showUrlInput = false; urlInput = ""; }}
+                class="text-xs px-2 py-1 rounded"
+                style="color: var(--text-secondary); background: var(--bg-editor); border: 1px solid var(--border-input); cursor: pointer;"
+              >Cancel</button>
+              <button
+                onclick={submitUrlImport}
+                class="text-xs px-2 py-1 rounded"
+                style="color: var(--text-btn-primary); background: var(--bg-btn-primary); cursor: pointer; border: none;"
+              >{importingUrl ? "Importing..." : "Import"}</button>
+            </div>
+          </div>
+        {:else}
+          <button onclick={() => { showMediaMenu = false; onUploadClick?.(); }} class="media-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload from file
+          </button>
+          <button onclick={() => { showMediaMenu = false; onOpenMediaPicker?.(); }} class="media-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Browse media
+          </button>
+          <button onclick={() => { showUrlInput = true; }} class="media-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Import from URL
+          </button>
+        {/if}
+      </div>
+    {/if}
+  </div>
+
   <!-- Code block language selector -->
   {#if isInCodeBlock}
     <span class="w-px h-5 mx-1" style="background: var(--border-color);"></span>
@@ -237,5 +345,21 @@
   .toolbar-btn.is-active {
     background: var(--toolbar-btn-active-bg);
     color: var(--toolbar-btn-active-text);
+  }
+  .media-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+  .media-menu-item:hover {
+    background: var(--bg-note-hover);
   }
 </style>
