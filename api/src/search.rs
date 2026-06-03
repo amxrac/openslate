@@ -22,6 +22,20 @@ pub struct SearchResult {
     content_snippet: Option<String>,
 }
 
+fn build_fts_query(raw: &str) -> String {
+    raw.split_whitespace()
+        .map(|word| {
+            let word = word.trim_matches('"');
+            if word.len() >= 3 {
+                format!("{}*", word)
+            } else {
+                word.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 pub async fn search_notes(
     State(db): State<SqlitePool>,
     Query(params): Query<SearchParams>,
@@ -30,6 +44,8 @@ pub async fn search_notes(
     if query.is_empty() {
         return Ok(Json(vec![]));
     }
+
+    let fts_query = build_fts_query(query);
 
     let results = sqlx::query_as::<_, SearchResult>(
         "SELECT n.id, n.title, n.slug, n.created_at, n.updated_at,
@@ -41,7 +57,7 @@ pub async fn search_notes(
          ORDER BY rank
          LIMIT 20",
     )
-    .bind(query)
+    .bind(&fts_query)
     .fetch_all(&db)
     .await
     .unwrap_or_default();

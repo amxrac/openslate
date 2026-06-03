@@ -88,7 +88,7 @@
       e.preventDefault();
       save();
     }
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "F") {
+    if ((e.metaKey || e.ctrlKey) && e.key === "f") {
       e.preventDefault();
       focusSearch();
     }
@@ -296,7 +296,7 @@
         bind:this={searchInputEl}
         value={searchQuery}
         oninput={handleSearchInput}
-        placeholder="Search notes... (⌘⇧F)"
+        placeholder="Search notes... (⌘F)"
         class="w-full text-sm px-2 py-1.5 rounded outline-none"
         style="color: var(--text-primary); background: var(--bg-editor); border: 1px solid var(--border-input);"
       />
