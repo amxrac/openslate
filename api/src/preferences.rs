@@ -8,9 +8,7 @@ pub struct UpdatePreferences {
     pub theme: Option<String>,
 }
 
-pub async fn get_preferences(
-    State(db): State<SqlitePool>,
-) -> Result<Json<Value>, StatusCode> {
+pub async fn get_preferences(State(db): State<SqlitePool>) -> Result<Json<Value>, StatusCode> {
     let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value FROM preferences")
         .fetch_all(&db)
         .await

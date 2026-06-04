@@ -81,10 +81,15 @@ async fn main() {
             "/api/media",
             get(media::list_media).post(media::upload_media),
         )
-        .route("/api/media/from-url", axum::routing::post(media::import_from_url))
+        .route(
+            "/api/media/from-url",
+            axum::routing::post(media::import_from_url),
+        )
         .route(
             "/api/media/{id}",
-            get(media::get_media).delete(media::delete_media).put(media::update_media),
+            get(media::get_media)
+                .delete(media::delete_media)
+                .put(media::update_media),
         )
         .route("/api/media/{id}/file", get(media::serve_media_file))
         .route(

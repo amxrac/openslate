@@ -111,6 +111,16 @@
     detailItem = null;
   }
 
+  async function copyCurrentLink() {
+    if (!detailItem) return;
+    await copyLink(detailItem);
+  }
+
+  async function deleteCurrentItem() {
+    if (!detailItem) return;
+    await deleteItem(detailItem);
+  }
+
   async function copyLink(item: MediaItem) {
     const url = mediaUrl(item);
     try {
@@ -255,14 +265,14 @@
           Open
         </a>
         <button
-          onclick={copyLink}
+          onclick={copyCurrentLink}
           class="text-xs px-3 py-1.5 rounded"
           style="color: var(--text-primary); background: var(--bg-editor); border: 1px solid var(--border-input);"
         >
           Copy link
         </button>
         <button
-          onclick={() => { deleteItem(detailItem); }}
+          onclick={deleteCurrentItem}
           class="text-xs px-3 py-1.5 rounded"
           style="color: var(--text-btn-primary); background: var(--text-danger); border: none;"
         >
