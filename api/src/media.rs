@@ -9,6 +9,14 @@ use sqlx::{QueryBuilder, SqlitePool};
 use uuid::Uuid;
 
 use crate::AppState;
+use s3::Client;
+
+fn storage(state: &AppState) -> Result<(&Client, &str), StatusCode> {
+    match (&state.client, &state.bucket) {
+        (Some(client), Some(bucket)) => Ok((client, bucket.as_str())),
+        _ => Err(StatusCode::SERVICE_UNAVAILABLE),
+    }
+}
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct MediaRow {
@@ -177,10 +185,11 @@ pub async fn upload_media(
     let filename = format!("{}.{}", id, ext);
     let key = format!("media/{}", filename);
 
-    state
-        .client
+    let (client, bucket) = storage(&state)?;
+
+    client
         .objects()
-        .put(&state.bucket, &key)
+        .put(bucket, &key)
         .content_type(&mime_type)
         .body_bytes(bytes.clone())
         .send()
@@ -309,10 +318,11 @@ pub async fn serve_media_file(
     .ok_or(StatusCode::NOT_FOUND)?;
 
     let key = format!("media/{}", row.filename);
-    let result = state
-        .client
+    let (client, bucket) = storage(&state)?;
+
+    let result = client
         .objects()
-        .get(&state.bucket, &key)
+        .get(bucket, &key)
         .send()
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
@@ -352,13 +362,9 @@ pub async fn delete_media(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let key = format!("media/{}", row.filename);
-    state
-        .client
-        .objects()
-        .delete(&state.bucket, &key)
-        .send()
-        .await
-        .ok();
+    let (client, bucket) = storage(&state)?;
+
+    client.objects().delete(bucket, &key).send().await.ok();
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -475,10 +481,16 @@ pub async fn import_from_url(
     let filename = format!("{}.{}", id, ext);
     let key = format!("media/{}", filename);
 
-    state
-        .client
+    let (client, bucket) = storage(&state).map_err(|_| {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(serde_json::json!({"error": "Media storage not configured"})),
+        )
+    })?;
+
+    client
         .objects()
-        .put(&state.bucket, &key)
+        .put(bucket, &key)
         .content_type(&mime_type)
         .body_bytes(bytes.to_vec())
         .send()
