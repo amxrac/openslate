@@ -3,51 +3,66 @@ import { tags as t } from "@lezer/highlight";
 import type { Extension } from "@codemirror/state";
 
 // Custom syntax highlighting using theme CSS variables.
-// Overrides CodeMirror's hardcoded defaultHighlightStyle.
+// Placed AFTER markdown() in the extension list so it wins.
 
 const openslateHighlight = HighlightStyle.define([
-  // Headings — inherit color from line decoration, just set weight
-  { tag: t.heading1, fontWeight: "700" },
-  { tag: t.heading2, fontWeight: "700" },
-  { tag: t.heading3, fontWeight: "600" },
-  { tag: t.heading4, fontWeight: "600" },
-  { tag: [t.heading5, t.heading6], fontWeight: "600" },
+  // ── Headings ──
+  { tag: t.heading1, fontWeight: "700", color: "var(--text-primary)" },
+  { tag: t.heading2, fontWeight: "700", color: "var(--text-primary)" },
+  { tag: t.heading3, fontWeight: "600", color: "var(--text-primary)" },
+  { tag: t.heading4, fontWeight: "600", color: "var(--text-primary)" },
+  { tag: [t.heading5, t.heading6], fontWeight: "600", color: "var(--text-primary)" },
 
-  // Inline formatting
-  { tag: t.strong, fontWeight: "700" },
-  { tag: t.emphasis, fontStyle: "italic" },
-  { tag: t.strikethrough, textDecoration: "line-through" },
+  // ── Inline formatting ──
+  { tag: t.strong, fontWeight: "700", color: "var(--text-primary)" },
+  { tag: t.emphasis, fontStyle: "italic", color: "var(--text-primary)" },
+  { tag: t.strikethrough, textDecoration: "line-through", color: "var(--text-secondary)" },
 
-  // Links — use theme variable
+  // ── Links and URLs ──
   { tag: t.link, color: "var(--editor-link-color)", textDecoration: "underline" },
   { tag: t.url, color: "var(--editor-link-color)" },
 
-  // Code
-  { tag: t.monospace, fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace' },
+  // ── Code ──
+  {
+    tag: t.monospace,
+    color: "var(--text-primary)",
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+  },
 
-  // Muted syntax markers
+  // ── Markdown syntax markers (faint) ──
   { tag: t.processingInstruction, color: "var(--text-tertiary)" },
   { tag: t.contentSeparator, color: "var(--text-tertiary)" },
 
-  // Quotes
+  // ── Block-level ──
   { tag: t.quote, color: "var(--text-secondary)" },
-
-  // Lists
   { tag: t.list, color: "var(--text-secondary)" },
-
-  // Code block language tags (```python, etc.)
   { tag: t.meta, color: "var(--text-tertiary)" },
 
-  // Code token highlights for fenced code blocks
-  { tag: t.keyword, color: "var(--text-link)" },
-  { tag: t.string, color: "var(--text-secondary)" },
-  { tag: t.number, color: "var(--text-link)" },
-  { tag: t.comment, color: "var(--text-tertiary)", fontStyle: "italic" },
-  { tag: t.typeName, color: "var(--text-link)" },
-  { tag: t.function(t.variableName), color: "var(--text-primary)" },
-  { tag: t.operator, color: "var(--text-secondary)" },
+  // ── Punctuation and brackets ──
+  {
+    tag: [t.punctuation, t.bracket, t.squareBracket, t.paren, t.brace],
+    color: "var(--text-tertiary)",
+  },
+
+  // ── Horizontal rule ──
+  { tag: t.separator, color: "var(--border-color)" },
+
+  // ── Code block token highlights ──
+  { tag: t.keyword, color: "var(--text-link)", fontWeight: "500" },
+  { tag: [t.modifier, t.operatorKeyword, t.controlKeyword, t.definitionKeyword], color: "var(--text-link)" },
+  { tag: [t.string, t.special(t.string)], color: "var(--text-secondary)" },
+  { tag: [t.number, t.integer, t.float, t.bool, t.null, t.atom], color: "var(--text-link)" },
+  { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: "var(--text-tertiary)", fontStyle: "italic" },
+  { tag: [t.typeName, t.className, t.namespace], color: "var(--text-link)" },
+  { tag: [t.function(t.variableName), t.function(t.propertyName), t.macroName], color: "var(--text-primary)" },
+  { tag: [t.propertyName, t.attributeName, t.definition(t.propertyName)], color: "var(--text-link)" },
   { tag: t.regexp, color: "var(--text-danger)" },
-  { tag: t.tagName, color: "var(--text-link)" },
+  { tag: t.escape, color: "var(--text-link)" },
+  { tag: [t.tagName, t.angleBracket], color: "var(--text-link)" },
+  { tag: [t.variableName, t.labelName, t.definition(t.variableName), t.local(t.variableName)], color: "var(--text-primary)" },
+  { tag: t.operator, color: "var(--text-secondary)" },
+  { tag: [t.attributeValue, t.character], color: "var(--text-secondary)" },
+  { tag: t.invalid, color: "var(--text-danger)" },
 ]);
 
 export const openslateSyntaxHighlighting: Extension = syntaxHighlighting(openslateHighlight);
