@@ -564,6 +564,15 @@ body {
 
 /* ── Line-level blocks (unconditional) ── */
 
+.cm-lp-h1,
+.cm-lp-h2,
+.cm-lp-h3,
+.cm-lp-h4,
+.cm-lp-h5,
+.cm-lp-h6 {
+  color: var(--text-primary) !important;
+}
+
 .cm-lp-h1 { font-size: 1.75em !important; font-weight: 700 !important; }
 .cm-lp-h2 { font-size: 1.5em !important; font-weight: 600 !important; }
 .cm-lp-h3 { font-size: 1.25em !important; font-weight: 600 !important; }
@@ -573,12 +582,13 @@ body {
 
 .cm-lp-blockquote-line {
   border-left: 4px solid var(--editor-blockquote-border) !important;
-  background: var(--editor-blockquote-bg);
-  color: var(--editor-blockquote-color);
+  background: var(--editor-blockquote-bg) !important;
+  color: var(--editor-blockquote-color) !important;
 }
 
 .cm-lp-codeblock-line {
   background: var(--editor-code-bg) !important;
+  color: var(--text-primary) !important;
 }
 
 .cm-lp-hr-line {
@@ -587,24 +597,37 @@ body {
 
 .cm-lp-task-done {
   color: var(--text-tertiary) !important;
+  text-decoration: line-through !important;
+}
+
+.cm-lp-math {
+  color: var(--text-link) !important;
+}
+
+.cm-lp-math-block {
+  background: var(--editor-code-bg) !important;
 }
 
 /* ── Inline marks (unconditional) ── */
 
 .cm-lp-bold {
   font-weight: 700 !important;
+  color: var(--text-primary) !important;
 }
 
 .cm-lp-italic {
   font-style: italic !important;
+  color: var(--text-primary) !important;
 }
 
 .cm-lp-strikethrough {
-  text-decoration: line-through;
+  text-decoration: line-through !important;
+  color: var(--text-secondary) !important;
 }
 
 .cm-lp-inline-code {
-  background: var(--editor-inline-code-bg);
+  background: var(--editor-inline-code-bg) !important;
+  color: var(--text-primary) !important;
   border-radius: 3px;
   padding: 1px 4px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -612,10 +635,11 @@ body {
 }
 
 .cm-lp-link {
-  color: var(--editor-link-color);
+  color: var(--editor-link-color) !important;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
+  cursor: pointer !important;
 }
 
 /* ── List markers ── */
@@ -627,10 +651,11 @@ body {
   margin-right: 0;
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
+  color: var(--text-secondary) !important;
 }
 
 .cm-lp-bullet {
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
   font-weight: 700;
 }
 
@@ -639,19 +664,8 @@ body {
   height: 14px !important;
   margin: 0 6px 0 0 !important;
   cursor: pointer !important;
-  accent-color: var(--text-link);
+  accent-color: var(--text-link) !important;
   vertical-align: middle;
-}
-
-/* ── Math ── */
-
-.cm-lp-math {
-  color: var(--text-link);
-  font-family: "KaTeX_Main", "Times New Roman", serif;
-}
-
-.cm-lp-math-block {
-  background: var(--editor-code-bg);
 }
 
 /* ===== Markdown preview styles ===== */
