@@ -69,12 +69,10 @@
   let cmdPaletteOpen = $state(false);
   let sidebarCollapsed = $state(false);
 
+  let saveDebounce: ReturnType<typeof setTimeout> | null = null;
+
   onMount(() => {
     loadNotes();
-
-    const interval = setInterval(() => {
-      if (dirty) save();
-    }, 2000);
 
     function onKeydown(e: KeyboardEvent) {
       const mod = e.metaKey || e.ctrlKey;
@@ -132,7 +130,7 @@
     document.addEventListener("keydown", onKeydown, { capture: true });
 
     return () => {
-      clearInterval(interval);
+      if (saveDebounce) clearTimeout(saveDebounce);
       document.removeEventListener("keydown", onKeydown, { capture: true });
     };
   });
@@ -348,6 +346,8 @@
 
   function markDirty() {
     dirty = true;
+    if (saveDebounce) clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(() => save(), 500);
   }
 
   async function handleLogout() {
@@ -449,7 +449,7 @@
               onclick={() => { clearSearch(); selectNote(result.slug); }}
               class="note-btn text-left"
             >
-              <div class="font-medium truncate">{@html result.title_highlight || result.title}</div>
+              <div class="font-medium break-words">{@html result.title_highlight || result.title}</div>
               {#if result.content_snippet}
                 <div class="text-xs mt-1 line-clamp-2" style="color: var(--text-secondary);">{@html result.content_snippet}</div>
               {/if}
@@ -487,7 +487,7 @@
                 onclick={() => selectNote(note.slug)}
                 class="note-btn"
               >
-                <div class="font-medium truncate">{note.title}</div>
+                <div class="font-medium break-words whitespace-normal">{note.title}</div>
                 <div class="text-xs" style="color: var(--text-secondary);">{formatDate(note.updated_at)}</div>
                 {#if note.tags.length > 0}
                   <div class="flex gap-1 mt-1 flex-wrap">

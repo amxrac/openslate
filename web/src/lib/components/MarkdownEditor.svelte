@@ -24,7 +24,7 @@
   let editorContainer = $state<HTMLDivElement | null>(null);
   let fileInputEl = $state<HTMLInputElement | null>(null);
 
-  let cmView: EditorView | null = null;
+  let cmView = $state<EditorView | null>(null);
   let uploadingFile = $state(false);
   let updatingContent = false;
 
@@ -50,23 +50,29 @@
       const initial = content;
       if (initial) {
         updatingContent = true;
-        const view = cmView;
-        view.dispatch({
-          changes: { from: 0, to: view.state.doc.length, insert: initial },
-        });
-        updatingContent = false;
+        try {
+          const view = cmView;
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: initial },
+          });
+        } finally {
+          updatingContent = false;
+        }
       }
       return;
     }
     if (updatingContent) return;
     const currentMd = cmView.state.doc.toString();
-    if (content !== undefined && content !== currentMd) {
-      updatingContent = true;
-      const view = cmView;
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: content },
-      });
-      updatingContent = false;
+      if (content !== undefined && content !== currentMd) {
+        updatingContent = true;
+      try {
+        const view = cmView;
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: content },
+        });
+      } finally {
+        updatingContent = false;
+      }
     }
   });
 
