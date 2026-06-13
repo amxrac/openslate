@@ -65,12 +65,9 @@ mod tests {
     async fn test_set_and_get_theme() {
         let db = setup_db().await;
 
-        let _ = update_preferences(
-            State(db.clone()),
-            Json(json!({ "theme": "dark" })),
-        )
-        .await
-        .unwrap();
+        let _ = update_preferences(State(db.clone()), Json(json!({ "theme": "dark" })))
+            .await
+            .unwrap();
 
         let prefs = get_preferences(State(db)).await.unwrap();
         assert_eq!(prefs.get("theme").unwrap(), &json!("dark"));
