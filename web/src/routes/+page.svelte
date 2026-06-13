@@ -8,7 +8,9 @@
   import MediaGallery from "$lib/components/MediaGallery.svelte";
   import MediaPicker from "$lib/components/MediaPicker.svelte";
   import CommandPalette from "$lib/components/CommandPalette.svelte";
-  import { PanelLeftOpen, PanelLeftClose } from "@lucide/svelte";
+  import SettingsModal from "$lib/components/SettingsModal.svelte";
+  import { PanelLeftOpen, PanelLeftClose, Settings, LogOut } from "@lucide/svelte";
+  import * as prefs from "$lib/preferences.svelte";
 
   type NoteSummary = {
     id: string;
@@ -66,8 +68,18 @@
   let searchInputEl = $state<HTMLInputElement | null>(null);
   let searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
+  let sortedNotes = $derived(
+    [...notes].sort((a, b) => {
+      const sort = prefs.getPreferences().noteSort;
+      if (sort === "title") return a.title.localeCompare(b.title);
+      if (sort === "created") return a.created_at.localeCompare(b.created_at);
+      return b.updated_at.localeCompare(a.updated_at);
+    }),
+  );
+
   let cmdPaletteOpen = $state(false);
   let sidebarCollapsed = $state(false);
+  let settingsOpen = $state(false);
 
   let saveDebounce: ReturnType<typeof setTimeout> | null = null;
 
@@ -415,7 +427,6 @@
             <button onclick={() => cmdPaletteOpen = true} class="text-xs px-1.5 py-0.5 rounded border cursor-pointer hover:opacity-80" style="color: var(--text-tertiary); border-color: var(--border-color);" title="Command palette (⌘⇧P / Ctrl+Shift+P)">
               ⌘⇧P
             </button>
-            <button onclick={handleLogout} class="text-xs" style="color: var(--text-danger);">Log out</button>
             <button
               onclick={() => sidebarCollapsed = true}
               class="cursor-pointer hover:opacity-80 p-1"
@@ -484,10 +495,10 @@
         {/if}
       {:else if activeTab === "notes" && loading}
         <p class="text-sm p-2" style="color: var(--text-tertiary);">Loading...</p>
-      {:else if activeTab === "notes" && notes.length === 0}
+      {:else if activeTab === "notes" && sortedNotes.length === 0}
         <p class="text-sm p-2" style="color: var(--text-tertiary);">No notes yet</p>
       {:else if activeTab === "notes"}
-        {#each notes as note}
+        {#each sortedNotes as note}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             role="none"
@@ -528,17 +539,42 @@
       {/if}
     </nav>
 
-    <!-- Theme switcher -->
+    <!-- Bottom bar -->
     <div class="p-3 border-t" style="border-color: var(--border-color);">
-      <div class="flex flex-wrap gap-1.5">
-        <button onclick={() => { theme.setTheme("light"); currentTheme = "light"; }} class="theme-dot" class:active={currentTheme === "light"} style="background: #ffffff;" title="Light"></button>
-        <button onclick={() => { theme.setTheme("dark"); currentTheme = "dark"; }} class="theme-dot" class:active={currentTheme === "dark"} style="background: #25262b;" title="Dark"></button>
-        <button onclick={() => { theme.setTheme("sepia"); currentTheme = "sepia"; }} class="theme-dot" class:active={currentTheme === "sepia"} style="background: #f4ecd8;" title="Sepia"></button>
-        <button onclick={() => { theme.setTheme("nord"); currentTheme = "nord"; }} class="theme-dot" class:active={currentTheme === "nord"} style="background: #3b4252;" title="Nord"></button>
-        <button onclick={() => { theme.setTheme("monokai"); currentTheme = "monokai"; }} class="theme-dot" class:active={currentTheme === "monokai"} style="background: #272822;" title="Monokai"></button>
-        <button onclick={() => { theme.setTheme("tokyo-night"); currentTheme = "tokyo-night"; }} class="theme-dot" class:active={currentTheme === "tokyo-night"} style="background: #1a1b26;" title="Tokyo Night"></button>
+      <div class="flex items-center justify-between">
+        <button
+          onclick={() => settingsOpen = true}
+          class="flex items-center gap-1.5 text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80"
+          style="color: var(--text-secondary);"
+          title="Settings"
+        >
+          <Settings size={14} />
+          Settings
+        </button>
+        <button onclick={handleLogout} class="text-xs cursor-pointer hover:opacity-80" style="color: var(--text-danger);">Log out</button>
       </div>
     </div>
+    {/if}
+
+    {#if sidebarCollapsed}
+      <div class="mt-auto p-2 border-t flex flex-col items-center gap-3" style="border-color: var(--border-color);">
+        <button
+          onclick={() => settingsOpen = true}
+          class="cursor-pointer hover:opacity-80 p-1"
+          style="color: var(--text-secondary);"
+          title="Settings"
+        >
+          <Settings size={16} />
+        </button>
+        <button
+          onclick={handleLogout}
+          class="cursor-pointer hover:opacity-80 p-1"
+          style="color: var(--text-danger);"
+          title="Log out"
+        >
+          <LogOut size={16} />
+        </button>
+      </div>
     {/if}
   </aside>
 
@@ -677,6 +713,12 @@
   onSwitchTab={(tab) => activeTab = tab}
   onSetTheme={(t) => { theme.setTheme(t); currentTheme = t; }}
   onLogout={handleLogout}
+  onOpenSettings={() => settingsOpen = true}
+/>
+
+<SettingsModal
+  open={settingsOpen}
+  onClose={() => settingsOpen = false}
 />
 
 <style>
