@@ -90,7 +90,10 @@ async fn main() {
             "/api/notes",
             get(notes::list_notes).post(notes::create_note),
         )
-        .route("/api/notes/import", axum::routing::post(notes::import_notes))
+        .route(
+            "/api/notes/import",
+            axum::routing::post(notes::import_notes),
+        )
         .route("/api/notes/export", get(notes::export_notes))
         .route("/api/notes/export-by-tag", get(notes::export_notes_by_tag))
         .route(

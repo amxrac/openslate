@@ -461,12 +461,19 @@ fn extract_inline_tags(md: &str) -> Vec<String> {
         let prev_char = md[..cap.0].chars().last();
         let is_word_start = match prev_char {
             None => true,
-            Some(c) => c.is_whitespace() || c == '(' || c == '[' || c == '>' || c == '\n' || c == '\r',
+            Some(c) => {
+                c.is_whitespace() || c == '(' || c == '[' || c == '>' || c == '\n' || c == '\r'
+            }
         };
         if !is_word_start {
             continue;
         }
-        if tag.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        if tag
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_digit())
+            .unwrap_or(false)
+        {
             continue;
         }
         out.push(tag.to_lowercase());
@@ -596,16 +603,14 @@ async fn import_single(
     let id = Uuid::new_v4().to_string();
     let slug = ensure_unique_slug(db, &slugify(&title), None).await;
 
-    sqlx::query(
-        "INSERT INTO notes (id, title, slug, content) VALUES (?1, ?2, ?3, ?4)",
-    )
-    .bind(&id)
-    .bind(&title)
-    .bind(&slug)
-    .bind(body)
-    .execute(db)
-    .await
-    .map_err(|e| format!("DB insert: {}", e))?;
+    sqlx::query("INSERT INTO notes (id, title, slug, content) VALUES (?1, ?2, ?3, ?4)")
+        .bind(&id)
+        .bind(&title)
+        .bind(&slug)
+        .bind(body)
+        .execute(db)
+        .await
+        .map_err(|e| format!("DB insert: {}", e))?;
 
     if let Some(ref created) = fm.created_at {
         sqlx::query("UPDATE notes SET created_at = ?1 WHERE id = ?2")
@@ -645,9 +650,7 @@ fn sanitize_filename(s: &str) -> String {
         .to_string()
 }
 
-pub async fn export_notes(
-    State(db): State<SqlitePool>,
-) -> Result<Response, StatusCode> {
+pub async fn export_notes(State(db): State<SqlitePool>) -> Result<Response, StatusCode> {
     let entries = load_export_entries(&db).await?;
     let readme = "# openslate export (flat)\n\n\
 Exported notes from openslate. Each note is a Markdown file with YAML frontmatter,\n\
@@ -656,8 +659,7 @@ Re-import any of these `.md` files via Settings → Data → Import (or the side
 import button) to restore them. The frontmatter preserves title, tags, slug,\n\
 and timestamps.\n";
     let mut zip = ZipWriter::new(std::io::Cursor::new(Vec::<u8>::new()));
-    let options =
-        SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
     zip.start_file("README.md", options)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -676,9 +678,7 @@ and timestamps.\n";
     build_zip_response(zip, "openslate-export.zip")
 }
 
-pub async fn export_notes_by_tag(
-    State(db): State<SqlitePool>,
-) -> Result<Response, StatusCode> {
+pub async fn export_notes_by_tag(State(db): State<SqlitePool>) -> Result<Response, StatusCode> {
     let entries = load_export_entries(&db).await?;
     let readme = "# openslate export (by tag)\n\n\
 Exported notes from openslate. Each note is a Markdown file with YAML frontmatter.\n\n\
@@ -688,8 +688,7 @@ Re-import any of these `.md` files via Settings → Data → Import (or the side
 import button) to restore them. The frontmatter preserves title, tags, slug,\n\
 and timestamps.\n";
     let mut zip = ZipWriter::new(std::io::Cursor::new(Vec::<u8>::new()));
-    let options =
-        SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
     zip.start_file("README.md", options)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -747,10 +746,7 @@ fn render_note_md(
     updated_at: &str,
 ) -> String {
     let mut fm = String::from("---\n");
-    fm.push_str(&format!(
-        "title: \"{}\"\n",
-        title.replace('"', "\\\"")
-    ));
+    fm.push_str(&format!("title: \"{}\"\n", title.replace('"', "\\\"")));
     fm.push_str(&format!("slug: \"{}\"\n", slug));
     if !tags.is_empty() {
         fm.push_str("tags: [");
