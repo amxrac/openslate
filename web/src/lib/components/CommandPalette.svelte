@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as theme from "$lib/theme.svelte";
 
-  let { open, onClose, onCreateNote, onSave, onFocusSearch, onSwitchTab, onSetTheme, onLogout, onOpenSettings, onSplitRight, onSplitDown, onClosePane }: {
+  let { open, onClose, onCreateNote, onSave, onFocusSearch, onSwitchTab, onSetTheme, onLogout, onOpenSettings, onSplitRight, onSplitDown, onClosePane, onCloseTab }: {
     open: boolean;
     onClose: () => void;
     onCreateNote: () => void;
@@ -14,6 +14,7 @@
     onSplitRight?: () => void;
     onSplitDown?: () => void;
     onClosePane?: () => void;
+    onCloseTab?: () => void;
   } = $props();
 
   let searchQuery = $state("");
@@ -38,6 +39,7 @@
     ...(onSplitRight ? [{ id: "split-right", label: "Split editor right", shortcut: "⌘⇧\\ / Ctrl+Shift+\\", action: () => { onSplitRight(); onClose(); } }] : []),
     ...(onSplitDown ? [{ id: "split-down", label: "Split editor down", shortcut: "⌘K ⇧\\", action: () => { onSplitDown(); onClose(); } }] : []),
     ...(onClosePane ? [{ id: "close-pane", label: "Close focused pane", shortcut: "⌘K ⌘W", action: () => { onClosePane(); onClose(); } }] : []),
+    ...(onCloseTab ? [{ id: "close-tab", label: "Close active tab", shortcut: "⌥W", action: () => { onCloseTab(); onClose(); } }] : []),
     ...theme.themes.map((t) => ({
       id: `theme-${t.id}`,
       label: `Theme: ${t.name}`,
