@@ -1746,7 +1746,8 @@ body {
   white-space: nowrap;
   user-select: none;
   min-width: 48px;
-  flex: 0 1 200px;
+  max-width: 200px;
+  flex: 0 1 auto;
   position: relative;
   border-radius: 7px 7px 0 0;
   margin-right: 1px;

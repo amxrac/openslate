@@ -144,6 +144,22 @@
     focusedPaneId = collectPaneIds(layout)[0];
   }
 
+  function maybeCloseEmptyPane(paneId: string) {
+    const pane = panes[paneId];
+    if (!pane || pane.tabs.length > 0) return;
+    const ids = collectPaneIds(layout);
+    if (ids.length <= 1) return;
+    const newLayout = removePaneNode(layout, paneId);
+    if (!newLayout) return;
+    layout = newLayout;
+    const newPanes = { ...panes };
+    delete newPanes[paneId];
+    panes = newPanes;
+    if (focusedPaneId === paneId) {
+      focusedPaneId = collectPaneIds(layout)[0];
+    }
+  }
+
   function focusPaneInDirection(dir: "up" | "down" | "left" | "right") {
     const ids = collectPaneIds(layout);
     const idx = ids.indexOf(focusedPaneId);
@@ -254,6 +270,7 @@
         else pane.noteMedia = [];
       }
     }
+    maybeCloseEmptyPane(paneId);
   }
 
   function handlePaneReorderTabs(paneId: string, newTabs: TabSession[]) {
@@ -295,6 +312,7 @@
     else toPane.noteMedia = [];
 
     focusedPaneId = toPaneId;
+    maybeCloseEmptyPane(fromPaneId);
   }
 
   function handlePaneTitleChange(paneId: string, title: string) {
@@ -562,6 +580,7 @@
     pane.activeTabId = null;
     pane.noteMedia = [];
     closeTabCtxMenu();
+    maybeCloseEmptyPane(paneId);
   }
 
   async function closeOtherTabsInPane(paneId: string, keepTabId: string) {
