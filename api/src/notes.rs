@@ -323,7 +323,7 @@ pub async fn update_note(
     State(db): State<SqlitePool>,
     Path(slug): Path<String>,
     Json(body): Json<UpdateNote>,
-) -> Result<Json<Value>, StatusCode> {
+) -> Result<Json<NoteResponse>, StatusCode> {
     let existing = sqlx::query_as::<_, NoteRow>(
         "SELECT id, title, slug, content, created_at, updated_at FROM notes WHERE slug = ?",
     )
@@ -333,9 +333,9 @@ pub async fn update_note(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let new_title = body.title.as_deref().unwrap_or(&existing.title);
+    let new_title = body.title.as_deref().unwrap_or(&existing.title).to_string();
     let new_slug = if body.title.is_some() {
-        ensure_unique_slug(&db, &slugify(new_title), Some(&existing.id)).await
+        ensure_unique_slug(&db, &slugify(&new_title), Some(&existing.id)).await
     } else {
         existing.slug.clone()
     };
@@ -344,7 +344,7 @@ pub async fn update_note(
     sqlx::query(
         "UPDATE notes SET title = ?, slug = ?, content = ?, updated_at = datetime('now') WHERE id = ?",
     )
-    .bind(new_title)
+    .bind(&new_title)
     .bind(&new_slug)
     .bind(new_content)
     .bind(&existing.id)
@@ -355,7 +355,27 @@ pub async fn update_note(
     set_note_tags(&db, &existing.id, body.tags).await;
     update_wikilinks(&db, &existing.id, new_content).await;
 
-    Ok(Json(json!({ "slug": new_slug })))
+    let note = sqlx::query_as::<_, NoteRow>(
+        "SELECT id, title, slug, content, created_at, updated_at FROM notes WHERE id = ?",
+    )
+    .bind(&existing.id)
+    .fetch_one(&db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let tags = get_note_tags(&db, &existing.id).await;
+    let backlinks = get_backlinks(&db, &existing.id).await;
+
+    Ok(Json(NoteResponse {
+        id: note.id,
+        title: note.title,
+        slug: note.slug,
+        content: note.content,
+        tags,
+        backlinks,
+        created_at: note.created_at,
+        updated_at: note.updated_at,
+    }))
 }
 
 pub async fn delete_note(
