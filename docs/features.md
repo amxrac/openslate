@@ -79,6 +79,19 @@ Theme preference persists in localStorage and syncs to the server. If you log in
 | `Cmd+Shift+S` | `Ctrl+Shift+S` | Save current note |
 | `Cmd+Shift+F` | `Ctrl+Shift+F` | Search all notes |
 | `Cmd+Shift+G` | `Ctrl+Shift+G` | Toggle media/notes tab |
+| `Cmd+Shift+\` | `Ctrl+Shift+\` | Split focused pane vertically |
+| `Cmd+\` | `Ctrl+\` | Toggle sidebar |
+| `Cmd+K` then `\` | `Ctrl+K` then `\` | Split focused pane vertically |
+| `Cmd+K` then `Shift+\` | `Ctrl+K` then `Shift+\` | Split focused pane horizontally |
+| `Cmd+K` then `Arrow` | `Ctrl+K` then `Arrow` | Focus pane in direction |
+| `Cmd+K` then `W` | `Ctrl+K` then `W` | Close active tab |
+| `Cmd+K` then `Cmd+W` | `Ctrl+K` then `Ctrl+W` | Close focused pane |
+| `Option+W` | `Alt+W` | Close active tab (reliable cross-browser) |
+| `Ctrl+Tab` | `Ctrl+Tab` | Next tab |
+| `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` | Previous tab |
+| `Escape` | `Escape` | Dismiss modals / cancel actions |
+
+> **Note:** `Cmd+W`/`Ctrl+W` is reserved by browsers for closing the browser tab. Use `Option+W`/`Alt+W` or the `Cmd+K, W` chord instead.
 
 ## Command Palette
 

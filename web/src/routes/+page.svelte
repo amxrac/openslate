@@ -132,6 +132,12 @@
     focusedPaneId = newPaneId;
   }
 
+  function closeFocusedTab() {
+    const pane = getFocusedPane();
+    const tab = pane.tabs.find(t => t.id === pane.activeTabId);
+    if (tab) handlePaneCloseTab(focusedPaneId, tab.id);
+  }
+
   function closeFocusedPane() {
     const ids = collectPaneIds(layout);
     if (ids.length <= 1) return;
@@ -457,68 +463,85 @@
 
     function onKeydown(e: KeyboardEvent) {
       const mod = e.metaKey || e.ctrlKey;
+
+      // Ctrl/Cmd+Shift+<key> shortcuts
       if (mod && e.shiftKey && !e.altKey) {
         switch (e.code) {
           case "KeyP":
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); e.stopImmediatePropagation();
             cmdPaletteOpen = !cmdPaletteOpen;
             return;
           case "KeyK":
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); e.stopImmediatePropagation();
             newTab();
             return;
           case "KeyS":
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); e.stopImmediatePropagation();
             save();
             return;
           case "KeyF":
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); e.stopImmediatePropagation();
             focusSearch();
             return;
           case "KeyG":
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); e.stopImmediatePropagation();
             sidebarTab = sidebarTab === "media" ? "notes" : "media";
             return;
           case "Backslash":
-            e.preventDefault(); e.stopPropagation();
+            e.preventDefault(); e.stopImmediatePropagation();
             splitFocusedPane("vertical");
             return;
         }
       }
-      if (mod && !e.shiftKey && e.code === "KeyW") {
-        e.preventDefault(); e.stopPropagation();
-        const pane = getFocusedPane();
-        const tab = pane.tabs.find(t => t.id === pane.activeTabId);
-        if (tab) handlePaneCloseTab(focusedPaneId, tab.id);
+
+      // Alt+W → close active tab (browsers reserve Ctrl/Cmd+W, so Alt+W is the reliable web shortcut)
+      if (e.altKey && !e.shiftKey && !mod && e.code === "KeyW") {
+        e.preventDefault(); e.stopImmediatePropagation();
+        closeFocusedTab();
         return;
       }
+
+      // Ctrl/Cmd+W → close active tab (may work in some browser/OS configurations, kept as fallback)
+      if (mod && !e.shiftKey && !e.altKey && e.code === "KeyW") {
+        e.preventDefault(); e.stopImmediatePropagation();
+        closeFocusedTab();
+        return;
+      }
+
+      // Ctrl+Tab / Ctrl+Shift+Tab → cycle tabs
       if (e.ctrlKey && !e.shiftKey && !e.metaKey && !e.altKey && e.code === "Tab") {
-        e.preventDefault(); e.stopPropagation();
+        e.preventDefault(); e.stopImmediatePropagation();
         nextTab();
         return;
       }
       if (e.ctrlKey && e.shiftKey && !e.metaKey && !e.altKey && e.code === "Tab") {
-        e.preventDefault(); e.stopPropagation();
+        e.preventDefault(); e.stopImmediatePropagation();
         prevTab();
         return;
       }
-      if (mod && !e.shiftKey && e.code === "Backslash") {
-        e.preventDefault(); e.stopPropagation();
+
+      // Ctrl/Cmd+\ → toggle sidebar
+      if (mod && !e.shiftKey && !e.altKey && e.code === "Backslash") {
+        e.preventDefault(); e.stopImmediatePropagation();
         sidebarCollapsed = !sidebarCollapsed;
         return;
       }
-      // Cmd+K chord prefix for pane operations
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.code === "KeyK") {
-        e.preventDefault(); e.stopPropagation();
+
+      // Cmd/Ctrl+K → chord prefix for pane operations
+      if (mod && !e.shiftKey && !e.altKey && e.code === "KeyK") {
+        e.preventDefault(); e.stopImmediatePropagation();
         const onChord = (ev: KeyboardEvent) => {
           document.removeEventListener("keydown", onChord);
-          if (ev.key === "ArrowLeft") { focusPaneInDirection("left"); return; }
+          if (ev.key === "ArrowLeft")  { focusPaneInDirection("left"); return; }
           if (ev.key === "ArrowRight") { focusPaneInDirection("right"); return; }
-          if (ev.key === "ArrowUp") { focusPaneInDirection("up"); return; }
-          if (ev.key === "ArrowDown") { focusPaneInDirection("down"); return; }
-          if ((ev.metaKey || ev.ctrlKey) && ev.code === "KeyW") { closeFocusedPane(); return; }
-          if ((ev.metaKey || ev.ctrlKey) && ev.shiftKey && ev.code === "Backslash") { splitFocusedPane("horizontal"); return; }
-          if ((ev.metaKey || ev.ctrlKey) && ev.code === "Backslash") { splitFocusedPane("vertical"); return; }
+          if (ev.key === "ArrowUp")    { focusPaneInDirection("up"); return; }
+          if (ev.key === "ArrowDown")  { focusPaneInDirection("down"); return; }
+          // Plain W → close active tab
+          if (ev.code === "KeyW" && !ev.metaKey && !ev.ctrlKey && !ev.altKey && !ev.shiftKey) { closeFocusedTab(); return; }
+          if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && ev.code === "KeyW") { closeFocusedPane(); return; }
+          if ((ev.metaKey || ev.ctrlKey) && ev.shiftKey && !ev.altKey && ev.code === "Backslash") { splitFocusedPane("horizontal"); return; }
+          if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && ev.code === "Backslash") { splitFocusedPane("vertical"); return; }
+          if ((ev.metaKey || ev.ctrlKey) && !ev.shiftKey && !ev.altKey && ev.code === "KeyS") { save(); return; }
         };
         document.addEventListener("keydown", onChord);
         return;
@@ -981,6 +1004,7 @@
   onSplitRight={() => splitFocusedPane("vertical")}
   onSplitDown={() => splitFocusedPane("horizontal")}
   onClosePane={closeFocusedPane}
+  onCloseTab={closeFocusedTab}
 />
 
 <SettingsModal
