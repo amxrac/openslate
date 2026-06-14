@@ -1,6 +1,6 @@
 <script lang="ts">
   import PaneView from "./PaneView.svelte";
-  import type { LayoutNode, PaneData } from "$lib/types";
+  import type { LayoutNode, PaneData, TabSession } from "$lib/types";
 
   type MediaItem = {
     id: string;
@@ -19,6 +19,7 @@
     onSwitchTab,
     onCloseTab,
     onTabContextMenu,
+    onReorderTabs,
     onTabTitleChange,
     onTabTagsChange,
     onTabContentChange,
@@ -36,6 +37,7 @@
     onSwitchTab?: (paneId: string, tabId: string) => void;
     onCloseTab?: (paneId: string, tabId: string) => void;
     onTabContextMenu?: (paneId: string, tabId: string, e: MouseEvent) => void;
+    onReorderTabs?: (paneId: string, newTabs: TabSession[]) => void;
     onTabTitleChange?: (paneId: string, title: string) => void;
     onTabTagsChange?: (paneId: string, tags: string) => void;
     onTabContentChange?: (paneId: string, md: string) => void;
@@ -95,6 +97,7 @@
       onSwitchTab={(tabId) => onSwitchTab?.(node.id, tabId)}
       onCloseTab={(tabId) => onCloseTab?.(node.id, tabId)}
       onTabContextMenu={(tabId, e) => onTabContextMenu?.(node.id, tabId, e)}
+      onReorderTabs={(newTabs) => onReorderTabs?.(node.id, newTabs)}
       onTabTitleChange={(t) => onTabTitleChange?.(node.id, t)}
       onTabTagsChange={(t) => onTabTagsChange?.(node.id, t)}
       onTabContentChange={(md) => onTabContentChange?.(node.id, md)}
@@ -122,6 +125,7 @@
         {onSwitchTab}
         {onCloseTab}
         {onTabContextMenu}
+        {onReorderTabs}
         {onTabTitleChange}
         {onTabTagsChange}
         {onTabContentChange}
@@ -150,6 +154,7 @@
         {onSwitchTab}
         {onCloseTab}
         {onTabContextMenu}
+        {onReorderTabs}
         {onTabTitleChange}
         {onTabTagsChange}
         {onTabContentChange}

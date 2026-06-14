@@ -35,6 +35,7 @@
     onSwitchTab,
     onCloseTab,
     onTabContextMenu,
+    onReorderTabs,
     onTabTitleChange,
     onTabTagsChange,
     onTabContentChange,
@@ -52,6 +53,7 @@
     onSwitchTab?: (tabId: string) => void;
     onCloseTab?: (tabId: string) => void;
     onTabContextMenu?: (tabId: string, e: MouseEvent) => void;
+    onReorderTabs?: (newTabs: TabSession[]) => void;
     onTabTitleChange?: (title: string) => void;
     onTabTagsChange?: (tags: string) => void;
     onTabContentChange?: (md: string) => void;
@@ -62,20 +64,84 @@
   } = $props();
 
   let activeTab = $derived(tabs.find((t) => t.id === activeTabId) ?? null);
+
+  let dragIdx = $state<number | null>(null);
+  let overIdx = $state<number | null>(null);
+  let overSide = $state<"left" | "right" | null>(null);
+
+  function onDragStart(e: DragEvent, idx: number) {
+    dragIdx = idx;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+    }
+  }
+
+  function onDragOver(e: DragEvent, idx: number) {
+    e.preventDefault();
+    if (dragIdx === null) return;
+    if (dragIdx === idx) {
+      overIdx = null;
+      overSide = null;
+      return;
+    }
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    overIdx = idx;
+    overSide = e.clientX < rect.left + rect.width / 2 ? "left" : "right";
+  }
+
+  function onDragLeave(e: DragEvent) {
+    const el = e.currentTarget as HTMLElement;
+    if (el.contains(e.relatedTarget as Node)) return;
+    overIdx = null;
+    overSide = null;
+  }
+
+  function onDrop(e: DragEvent) {
+    e.preventDefault();
+    if (dragIdx === null || overIdx === null || overSide === null) return;
+    if (dragIdx === overIdx) return;
+
+    const newTabs = [...tabs];
+    const [dragged] = newTabs.splice(dragIdx, 1);
+    let insertAt = overSide === "right" ? overIdx + 1 : overIdx;
+    if (dragIdx < insertAt) insertAt--;
+    newTabs.splice(insertAt, 0, dragged);
+
+    onReorderTabs?.(newTabs);
+    dragIdx = null;
+    overIdx = null;
+    overSide = null;
+  }
+
+  function onDragEnd() {
+    dragIdx = null;
+    overIdx = null;
+    overSide = null;
+  }
 </script>
 
 <div class="pane flex flex-col min-h-0 flex-1">
   {#if tabs.length > 0}
     <div class="tab-bar">
-      {#each tabs as tab}
+      {#each tabs as tab, idx}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           role="none"
           class="tab-item"
           class:active={tab.id === activeTabId}
+          class:dragging={dragIdx === idx}
+          class:drop-left={overIdx === idx && overSide === "left"}
+          class:drop-right={overIdx === idx && overSide === "right"}
+          draggable="true"
           onclick={() => onSwitchTab?.(tab.id)}
           onmousedown={(e) => { if (e.button === 1) { e.preventDefault(); onCloseTab?.(tab.id); } }}
           oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); onTabContextMenu?.(tab.id, e); }}
+          ondragstart={(e) => onDragStart(e, idx)}
+          ondragover={(e) => onDragOver(e, idx)}
+          ondragleave={(e) => onDragLeave(e)}
+          ondrop={(e) => onDrop(e)}
+          ondragend={onDragEnd}
           title={tab.title || "Untitled"}
         >
           {#if tab.dirty}
@@ -167,3 +233,15 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .tab-item.dragging {
+    opacity: 0.4;
+  }
+  .tab-item.drop-left {
+    box-shadow: -2px 0 0 var(--text-link);
+  }
+  .tab-item.drop-right {
+    box-shadow: 2px 0 0 var(--text-link);
+  }
+</style>

@@ -256,6 +256,12 @@
     }
   }
 
+  function handlePaneReorderTabs(paneId: string, newTabs: TabSession[]) {
+    const pane = panes[paneId];
+    if (!pane) return;
+    pane.tabs = newTabs;
+  }
+
   function handlePaneTitleChange(paneId: string, title: string) {
     const pane = panes[paneId];
     if (!pane) return;
@@ -846,6 +852,7 @@
         onSwitchTab={handlePaneSwitchTab}
         onCloseTab={handlePaneCloseTab}
         onTabContextMenu={handleTabContextMenu}
+        onReorderTabs={handlePaneReorderTabs}
         onTabTitleChange={handlePaneTitleChange}
         onTabTagsChange={handlePaneTagsChange}
         onTabContentChange={handlePaneContentChange}
