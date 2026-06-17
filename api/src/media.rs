@@ -540,14 +540,19 @@ pub async fn import_from_url(
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn test_list_media_empty() {
+    async fn setup_media_db() -> sqlx::SqlitePool {
         let db = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(1)
             .connect("sqlite::memory:")
             .await
             .unwrap();
         sqlx::migrate!("./migrations").run(&db).await.unwrap();
+        db
+    }
+
+    #[tokio::test]
+    async fn test_list_media_empty() {
+        let db = setup_media_db().await;
         let state = crate::AppState {
             db,
             client: None,
@@ -566,5 +571,53 @@ mod tests {
         .await
         .unwrap();
         assert!(items.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_list_media_filter_by_type() {
+        let db = setup_media_db().await;
+
+        sqlx::query(
+            "INSERT INTO media (id, filename, original_name, mime_type, size) VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind("img1")
+        .bind("img1.png")
+        .bind("photo.png")
+        .bind("image/png")
+        .bind(100i64)
+        .execute(&db)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO media (id, filename, original_name, mime_type, size) VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind("vid1")
+        .bind("vid1.mp4")
+        .bind("video.mp4")
+        .bind("video/mp4")
+        .bind(200i64)
+        .execute(&db)
+        .await
+        .unwrap();
+
+        let state = crate::AppState {
+            db,
+            client: None,
+            bucket: None,
+        };
+        let Json(items) = list_media(
+            State(state),
+            Query(ListMediaParams {
+                r#type: Some("image/".into()),
+                note_id: None,
+                q: None,
+                _tags: None,
+            }),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].mime_type, "image/png");
     }
 }
