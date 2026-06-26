@@ -842,6 +842,6 @@ mod tests {
     async fn test_get_note_not_found() {
         let db = setup_db().await;
         let result = get_note(State(db), Path("nope".into())).await;
-        assert!(result.is_err());
+        assert!(matches!(result, Err(StatusCode::NOT_FOUND)));
     }
 }
